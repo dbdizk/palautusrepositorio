@@ -1,0 +1,20 @@
+[project]
+name = "nhl-reader"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Matti Luukkainen",email = "mluukkai@iki.fi"}
+]
+license = {text = "MIT"}
+requires-python = "^3.12"
+dependencies = [
+    "requests (>=2.32.5,<3.0.0)",
+    "rich (>=14.2.0,<15.0.0)"
+]
+
+[tool.poetry]
+package-mode = false
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
