@@ -1,16 +1,9 @@
-import requests
-from player import Player, PlayerReader, PlayerStats
 from rich.console import Console
 from rich.table import Table
+from player import PlayerReader, PlayerStats
 
 
-
-def main(season,nationality):
-    url = f"https://studies.cs.helsinki.fi/nhlstats/{season}/players"
-    reader = PlayerReader(url)
-    stats = PlayerStats(reader)
-    players = stats.top_scorers_by_nationality(nationality)
-
+def create_table(players, season: str, nationality: str) -> Table:
     table = Table(title=f"Season {season} players from {nationality}")
     table.add_column("Name", justify="left", style="cyan")
     table.add_column("Teams")
@@ -21,10 +14,22 @@ def main(season,nationality):
     for player in players:
         table.add_row(*player.to_row())
 
-    console = Console()
-    console.print(table)
-    
-if __name__ == "__main__":
+    return table
+
+
+def main() -> None:
     season = input("Enter season (format '2020-21'): ")
     nationality = input("Enter nationality (format 'FIN, USA'): ")
-    main(season,nationality)
+
+    url = f"https://studies.cs.helsinki.fi/nhlstats/{season}/players"
+    reader = PlayerReader(url)
+    stats = PlayerStats(reader)
+    players = stats.top_scorers_by_nationality(nationality)
+
+    table = create_table(players, season, nationality)
+    console = Console()
+    console.print(table)
+
+
+if __name__ == "__main__":
+    main()

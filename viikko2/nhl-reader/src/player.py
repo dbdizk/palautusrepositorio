@@ -1,11 +1,10 @@
 import requests
-import rich
 class PlayerReader:
     def __init__(self,url):
         self.url = url
 
     def get_players(self):
-        response = requests.get(self.url).json()
+        response = requests.get(self.url, timeout=10).json()
         players = []
 
         for player_dict in response:
@@ -23,17 +22,15 @@ class PlayerStats:
         return sorted(filtered, key=lambda player: player.points, reverse=True)
 
 class Player:
-    def __init__(self, dict):
-        self.name = dict['name']
-        self.nationality = dict['nationality']
-        self.goals = dict['goals']
-        self.assists = dict['assists']
-        self.team = dict['team']
-        self.games = dict['games']
+    def __init__(self, data: dict):
+        self.name = data['name']
+        self.nationality = data['nationality']
+        self.goals = data['goals']
+        self.assists = data['assists']
+        self.team = data['team']
+        self.games = data['games']
         self.points = self.goals+self.assists
-    
-    def __str__(self):
-        return (self.name,self.team,self.goals,self.assists,self.points)
-    
+
+
     def to_row(self):
         return (self.name,self.team,str(self.goals),str(self.assists),str(self.points))
