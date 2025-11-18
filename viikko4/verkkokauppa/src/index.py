@@ -27,6 +27,8 @@ def main():
     # kirjanpito
     for tapahtuma in kirjanpito.tapahtumat:
         print(tapahtuma)
+    
+    #teht5
 
 
 if __name__ == "__main__":
