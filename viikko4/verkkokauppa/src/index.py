@@ -29,6 +29,7 @@ def main():
         print(tapahtuma)
     
     #teht5
+    #teht5
 
 
 if __name__ == "__main__":
