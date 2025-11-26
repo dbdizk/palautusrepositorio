@@ -21,7 +21,7 @@ class TennisGame:
         else:
             return "Deuce"
 
-    def end_of_point(self):
+    def advantage_or_win_score(self):
         minus_result = self.m_score1 - self.m_score2
 
         if minus_result == 1:
@@ -60,7 +60,7 @@ class TennisGame:
             return self.equal_score()
 
         elif self.m_score1 >= 4 or self.m_score2 >= 4:
-            return self.end_of_point()
+            return self.advantage_or_win_score()
 
         else:
             return self.scores_not_equal_during_play()
