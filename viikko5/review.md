@@ -1,0 +1,1 @@
+Copilotin review oli ihan hyvä, lähinnä funktioiden nimien muutoksia selkeämmäksi. En ottanut neuvoja vastaan koska en jaksanut mergetä 4 erillistä pull requestia. Laittamani nimet kelpaavat ihan hyvin.
