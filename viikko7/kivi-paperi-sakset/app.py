@@ -37,11 +37,11 @@ def start_game():
     session['tasapelit'] = 0
     session['game_over'] = False
     
-    # For AI games, initialize AI state
-    if game_type in ['b', 'c']:
+    # Store AI state for persistence
+    if game_type == 'b':
         session['ai_siirto_counter'] = 0
-        if game_type == 'c':
-            session['ai_muisti'] = []
+    elif game_type == 'c':
+        session['ai_muisti'] = []
     
     return redirect(url_for('play'))
 
@@ -76,8 +76,19 @@ def make_move():
     game_type = session['game_type']
     ekan_siirto = request.form.get('ekan_siirto', '').lower()
     
+    # Create game instance and restore AI state
+    peli = LuoPeli.luo_peli(game_type)
+    if game_type == 'b':
+        peli._tekoaly._siirto = session.get('ai_siirto_counter', 0)
+    elif game_type == 'c':
+        saved_moves = session.get('ai_muisti', [])
+        # Restore memory: copy saved moves into the fixed-size array
+        for i, move in enumerate(saved_moves):
+            peli._tekoaly._muisti[i] = move
+        peli._tekoaly._vapaa_muisti_indeksi = len(saved_moves)
+    
     # Validate first player's move
-    if ekan_siirto not in ['k', 'p', 's']:
+    if not peli._onko_ok_siirto(ekan_siirto):
         session['game_over'] = True
         session['last_round'] = {
             'ekan_siirto': ekan_siirto,
@@ -86,11 +97,10 @@ def make_move():
         }
         return redirect(url_for('play'))
     
-    # Get second player's move
+    # Get second player's move using game logic
     if game_type == 'a':
-        # Player vs Player
         tokan_siirto = request.form.get('tokan_siirto', '').lower()
-        if tokan_siirto not in ['k', 'p', 's']:
+        if not peli._onko_ok_siirto(tokan_siirto):
             session['game_over'] = True
             session['last_round'] = {
                 'ekan_siirto': ekan_siirto,
@@ -98,85 +108,38 @@ def make_move():
                 'result': 'Virheellinen siirto! Peli päättyi.'
             }
             return redirect(url_for('play'))
-    elif game_type == 'b':
-        # Simple AI
-        counter = session.get('ai_siirto_counter', 0)
-        counter = (counter + 1) % 3
-        session['ai_siirto_counter'] = counter
+    else:
+        # Use the game's AI logic
+        tokan_siirto = peli._toisen_siirto(ekan_siirto)
         
-        if counter == 0:
-            tokan_siirto = "k"
-        elif counter == 1:
-            tokan_siirto = "p"
-        else:
-            tokan_siirto = "s"
-    else:  # game_type == 'c'
-        # Advanced AI
-        muisti = session.get('ai_muisti', [])
+        # Update AI memory with player's move (for advanced AI)
+        if game_type == 'c':
+            peli._tekoaly.aseta_siirto(ekan_siirto)
         
-        if len(muisti) == 0 or len(muisti) == 1:
-            tokan_siirto = "k"
-        else:
-            viimeisin_siirto = muisti[-1]
-            
-            k = 0
-            p = 0
-            s = 0
-            
-            for i in range(len(muisti) - 1):
-                if viimeisin_siirto == muisti[i]:
-                    seuraava = muisti[i + 1]
-                    
-                    if seuraava == "k":
-                        k += 1
-                    elif seuraava == "p":
-                        p += 1
-                    else:
-                        s += 1
-            
-            if k > p or k > s:
-                tokan_siirto = "p"
-            elif p > k or p > s:
-                tokan_siirto = "s"
-            else:
-                tokan_siirto = "k"
-        
-        # Update memory
-        muisti.append(ekan_siirto)
-        if len(muisti) > 10:
-            muisti.pop(0)
-        session['ai_muisti'] = muisti
+        # Save AI state back to session
+        if game_type == 'b':
+            session['ai_siirto_counter'] = peli._tekoaly._siirto
+        elif game_type == 'c':
+            session['ai_muisti'] = peli._tekoaly._muisti[:peli._tekoaly._vapaa_muisti_indeksi]
     
-    # Create tuomari and record move
+    # Use Tuomari to record move and determine outcome
     tuomari = Tuomari()
     tuomari.ekan_pisteet = session.get('ekan_pisteet', 0)
     tuomari.tokan_pisteet = session.get('tokan_pisteet', 0)
     tuomari.tasapelit = session.get('tasapelit', 0)
     
+    # Store previous scores to determine what happened this round
+    prev_ekan = tuomari.ekan_pisteet
+    prev_tokan = tuomari.tokan_pisteet
+    prev_tasapelit = tuomari.tasapelit
+    
+    # kirjaa_siirto automatically determines tie/winner and updates scores
     tuomari.kirjaa_siirto(ekan_siirto, tokan_siirto)
     
-    # Update session
-    session['ekan_pisteet'] = tuomari.ekan_pisteet
-    session['tokan_pisteet'] = tuomari.tokan_pisteet
-    session['tasapelit'] = tuomari.tasapelit
-    
-    # Check if either player reached 5 points
-    winner = None
-    if tuomari.ekan_pisteet >= 5:
-        session['game_over'] = True
-        winner = 'Pelaaja 1'
-        # Increment game statistics when game ends
-        stats.increment_game_count(game_type, player1_won=True, player2_won=False)
-    elif tuomari.tokan_pisteet >= 5:
-        session['game_over'] = True
-        winner = 'Pelaaja 2'
-        # Increment game statistics when game ends
-        stats.increment_game_count(game_type, player1_won=False, player2_won=True)
-    
-    # Determine result
-    if ekan_siirto == tokan_siirto:
+    # Determine what happened by comparing scores
+    if tuomari.tasapelit > prev_tasapelit:
         result = "Tasapeli!"
-    elif tuomari._eka_voittaa(ekan_siirto, tokan_siirto):
+    elif tuomari.ekan_pisteet > prev_ekan:
         result = "Pelaaja 1 voitti kierroksen!"
     else:
         result = "Pelaaja 2 voitti kierroksen!"
@@ -187,8 +150,20 @@ def make_move():
         'result': result
     }
     
-    if winner:
-        session['winner'] = winner
+    # Update session with new scores
+    session['ekan_pisteet'] = tuomari.ekan_pisteet
+    session['tokan_pisteet'] = tuomari.tokan_pisteet
+    session['tasapelit'] = tuomari.tasapelit
+    
+    # Check if game is over (first to 3 points)
+    if tuomari.ekan_pisteet >= 3:
+        session['game_over'] = True
+        session['winner'] = 'Pelaaja 1'
+        stats.increment_game_count(game_type, player1_won=True, player2_won=False)
+    elif tuomari.tokan_pisteet >= 3:
+        session['game_over'] = True
+        session['winner'] = 'Pelaaja 2'
+        stats.increment_game_count(game_type, player1_won=False, player2_won=True)
     
     return redirect(url_for('play'))
 

@@ -176,7 +176,7 @@ class TestPlayerVsPlayer:
             assert sess['ekan_pisteet'] == 1
             assert sess['tokan_pisteet'] == 0
             assert sess['tasapelit'] == 0
-            assert sess['game_over'] == False  # Game continues until 5 points
+            assert sess['game_over'] == False  # Game continues until 3 points
     
     def test_valid_move_paper_vs_rock(self, client):
         """Test paper beats rock"""
@@ -286,51 +286,51 @@ class TestPlayerVsPlayer:
             assert sess['tasapelit'] == 1
             assert sess['game_over'] == False  # Game not over yet
     
-    def test_player1_wins_at_5_points(self, client):
-        """Test that game ends when player 1 reaches 5 points"""
+    def test_player1_wins_at_3_points(self, client):
+        """Test that game ends when player 1 reaches 3 points"""
         self.setup_pvp_game(client)
         
-        # Player 1 wins 5 times
-        for i in range(5):
+        # Player 1 wins 3 times
+        for i in range(3):
             client.post('/move', data={'ekan_siirto': 'k', 'tokan_siirto': 's'})
         
         with client.session_transaction() as sess:
-            assert sess['ekan_pisteet'] == 5
+            assert sess['ekan_pisteet'] == 3
             assert sess['tokan_pisteet'] == 0
             assert sess['game_over'] == True
             assert sess['winner'] == 'Pelaaja 1'
     
-    def test_player2_wins_at_5_points(self, client):
-        """Test that game ends when player 2 reaches 5 points"""
+    def test_player2_wins_at_3_points(self, client):
+        """Test that game ends when player 2 reaches 3 points"""
         self.setup_pvp_game(client)
         
-        # Player 2 wins 5 times
-        for i in range(5):
+        # Player 2 wins 3 times
+        for i in range(3):
             client.post('/move', data={'ekan_siirto': 's', 'tokan_siirto': 'k'})
         
         with client.session_transaction() as sess:
             assert sess['ekan_pisteet'] == 0
-            assert sess['tokan_pisteet'] == 5
+            assert sess['tokan_pisteet'] == 3
             assert sess['game_over'] == True
             assert sess['winner'] == 'Pelaaja 2'
     
-    def test_game_continues_until_5_points(self, client):
-        """Test that game continues even with 4 points"""
+    def test_game_continues_until_3_points(self, client):
+        """Test that game continues even with 2 points"""
         self.setup_pvp_game(client)
         
-        # Player 1 wins 4 times
-        for i in range(4):
+        # Player 1 wins 2 times
+        for i in range(2):
             client.post('/move', data={'ekan_siirto': 'k', 'tokan_siirto': 's'})
         
         with client.session_transaction() as sess:
-            assert sess['ekan_pisteet'] == 4
+            assert sess['ekan_pisteet'] == 2
             assert sess['game_over'] == False
         
-        # One more win reaches 5
+        # One more win reaches 3
         client.post('/move', data={'ekan_siirto': 'k', 'tokan_siirto': 's'})
         
         with client.session_transaction() as sess:
-            assert sess['ekan_pisteet'] == 5
+            assert sess['ekan_pisteet'] == 3
             assert sess['game_over'] == True
 
 
@@ -389,20 +389,20 @@ class TestAIGame:
         assert counter2 == 2
         assert counter3 == 0
     
-    def test_ai_game_ends_at_5_points(self, client):
-        """Test that AI game ends when either player reaches 5 points"""
+    def test_ai_game_ends_at_2_points(self, client):
+        """Test that AI game ends when either player reaches 3 points"""
         self.setup_ai_game(client)
         
         # AI cycles: first move is 'p' (counter 0->1), then 's' (1->2), then 'k' (2->0)
         # To ensure player wins, we play the winning move each time
-        moves = ['s', 'k', 'p', 's', 'k']  # s beats p, k beats s, p beats k
+        moves = ['s', 'k', 'p']  # s beats p, k beats s, p beats k
         for move in moves:
             client.post('/move', data={'ekan_siirto': move})
         
         with client.session_transaction() as sess:
             assert sess['game_over'] == True
-            # Player should have won 5 times
-            assert sess['ekan_pisteet'] == 5
+            # Player should have won 3 times
+            assert sess['ekan_pisteet'] == 3
 
 
 class TestAdvancedAIGame:
@@ -447,17 +447,17 @@ class TestAdvancedAIGame:
             assert sess['ai_muisti'] == moves
     
     def test_advanced_ai_memory_limit(self, client):
-        """Test that advanced AI memory grows correctly (limited by game ending at 5 points)"""
+        """Test that advanced AI memory grows correctly (limited by game ending at 3 points)"""
         self.setup_advanced_ai_game(client)
         
-        # Make 4 moves (game will end at 5 points, so we can't test full 10-item limit)
-        # Use ties to not trigger the 5-point win
-        for i in range(4):
+        # Make 2 moves (game will end at 3 points, so we can't test full 10-item limit)
+        # Use ties to not trigger the 3-point win
+        for i in range(2):
             # AI returns 'k' for first move, so we play 'k' for ties
             client.post('/move', data={'ekan_siirto': 'k'})
         
         with client.session_transaction() as sess:
-            assert len(sess['ai_muisti']) == 4
+            assert len(sess['ai_muisti']) == 2
             assert sess['game_over'] == False
     
     def test_advanced_ai_first_move(self, client):
@@ -481,13 +481,13 @@ class TestGameFlow:
         # Start game
         client.post('/start', data={'game_type': 'a'})
         
-        # Make valid moves - player 1 wins 5 times
-        for i in range(5):
+        # Make valid moves - player 1 wins 3 times
+        for i in range(3):
             client.post('/move', data={'ekan_siirto': 'k', 'tokan_siirto': 's'})
         
         with client.session_transaction() as sess:
             assert sess['game_over'] == True
-            assert sess['ekan_pisteet'] == 5
+            assert sess['ekan_pisteet'] == 3
             assert sess['winner'] == 'Pelaaja 1'
     
     def test_cannot_move_without_starting_game(self, client):
@@ -644,8 +644,8 @@ class TestGameStats:
         # Start and complete a game
         client.post('/start', data={'game_type': 'a'})
         
-        # Player 1 wins 5 times
-        for i in range(5):
+        # Player 1 wins 3 times
+        for i in range(3):
             client.post('/move', data={'ekan_siirto': 'k', 'tokan_siirto': 's'})
         
         # Check that stats were incremented
@@ -662,7 +662,7 @@ class TestGameStats:
         # Play 3 complete games
         for game_num in range(3):
             client.post('/start', data={'game_type': 'a'})
-            for i in range(5):
+            for i in range(3):
                 client.post('/move', data={'ekan_siirto': 'k', 'tokan_siirto': 's'})
         
         assert stats.get_total_games() == initial_count + 3
@@ -673,12 +673,12 @@ class TestGameStats:
         
         # Play player vs player game
         client.post('/start', data={'game_type': 'a'})
-        for i in range(5):
+        for i in range(3):
             client.post('/move', data={'ekan_siirto': 'k', 'tokan_siirto': 's'})
         
         # Play AI game - AI cycles k->p->s, so we counter appropriately
         client.post('/start', data={'game_type': 'b'})
-        moves = ['s', 'k', 'p', 's', 'k']  # Counter AI's p, s, k, p, s
+        moves = ['s', 'k', 'p']  # Counter AI's p, s, k
         for move in moves:
             client.post('/move', data={'ekan_siirto': move})
         
