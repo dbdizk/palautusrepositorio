@@ -33,7 +33,7 @@ class TennisGame:
         else:
             return "Win for player2"
 
-    def scores_not_equal_during_play(self):
+    def normal_play_score(self):
         score = ""
         temp_score = 0
 
@@ -63,4 +63,4 @@ class TennisGame:
             return self.end_of_point()
 
         else:
-            return self.scores_not_equal_during_play()
+            return self.normal_play_score()
