@@ -35,14 +35,10 @@ class TennisGame:
 
     def scores_not_equal_during_play(self):
         score = ""
-        temp_score = 0
 
-        for i in range(1, 3):
-            if i == 1:
-                temp_score = self.m_score1
-            else:
+        for player_index, temp_score in enumerate([self.m_score1, self.m_score2]):
+            if player_index > 0:
                 score += "-"
-                temp_score = self.m_score2
 
             if temp_score == 0:
                 score += "Love"
